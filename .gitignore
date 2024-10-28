@@ -1,3 +1,6 @@
+# venv
+*.venv
+
 # generated
 .ipynb_checkpoints/
 __pycache__/

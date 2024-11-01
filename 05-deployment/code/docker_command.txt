@@ -1,3 +1,3 @@
 docker build -t churn-prediction-app .
 docker run -p 9696:9696 churn-prediction-app
- python /workspaces/machine-learning-zoomcamp/05-deployment/code/predict-test.py
+python /workspaces/machine-learning-zoomcamp/05-deployment/code/predict-test.py

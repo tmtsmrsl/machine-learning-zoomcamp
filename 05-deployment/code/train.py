@@ -9,7 +9,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
 
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 
@@ -23,7 +24,7 @@ output_file = f'model_C={C}.bin'
 
 # data preparation
 
-df = pd.read_csv('data-week-3.csv')
+df = pd.read_csv('../../03-classification/data-week-3.csv')
 
 df.columns = df.columns.str.lower().str.replace(' ', '_')
 
@@ -64,21 +65,24 @@ categorical = [
 # training 
 
 def train(df_train, y_train, C=1.0):
-    dicts = df_train[categorical + numerical].to_dict(orient='records')
+    preprocessor = ColumnTransformer(
+    transformers=[
+        ('cat', OneHotEncoder(sparse_output=False), categorical),
+        ('num', 'passthrough', numerical)
+    ]
+)
 
-    dv = DictVectorizer(sparse=False)
-    X_train = dv.fit_transform(dicts)
+    # Fit and transform the training data
+    X_train = preprocessor.fit_transform(df_train[categorical + numerical])
 
     model = LogisticRegression(C=C, max_iter=1000)
     model.fit(X_train, y_train)
     
-    return dv, model
+    return preprocessor, model
 
 
-def predict(df, dv, model):
-    dicts = df[categorical + numerical].to_dict(orient='records')
-
-    X = dv.transform(dicts)
+def predict(df, transformer, model):
+    X = transformer.transform(df)
     y_pred = model.predict_proba(X)[:, 1]
 
     return y_pred
@@ -119,8 +123,8 @@ print('C=%s %.3f +- %.3f' % (C, np.mean(scores), np.std(scores)))
 
 print('training the final model')
 
-dv, model = train(df_full_train, df_full_train.churn.values, C=1.0)
-y_pred = predict(df_test, dv, model)
+preprocessor, model = train(df_full_train, df_full_train.churn.values, C=1.0)
+y_pred = predict(df_test, preprocessor, model)
 
 y_test = df_test.churn.values
 auc = roc_auc_score(y_test, y_pred)
@@ -131,6 +135,6 @@ print(f'auc={auc}')
 # Save the model
 
 with open(output_file, 'wb') as f_out:
-    pickle.dump((dv, model), f_out)
+    pickle.dump((preprocessor, model), f_out)
 
 print(f'the model is saved to {output_file}')

@@ -1,15 +1,18 @@
-FROM python:3.8.12-slim
+FROM python:3.12.7-slim
 
-RUN pip install pipenv
+# Copy the requirements file
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app
 
-COPY ["Pipfile", "Pipfile.lock", "./"]
-
-RUN pipenv install --system --deploy
-
+# Copy application files
 COPY ["predict.py", "model_C=1.0.bin", "./"]
 
+# Expose the application's port
 EXPOSE 9696
 
+# Define the entrypoint for the application
 ENTRYPOINT ["gunicorn", "--bind=0.0.0.0:9696", "predict:app"]
